@@ -68,15 +68,18 @@ class ReviewController extends AbstractController
         if ($review->getUserGiver() != $this->security->getUser()){
             throw $this->createAccessDeniedException('Access denied: l\'id de la personne qui envoie le message n\'est pas celui de la personne connectée');
         }
+        
         // Set the additional required datas from the review in database
+        $userTaker = $review->getUserTaker();
         $review->setCreatedAt(new DateTime());
         $review->setUserGiver($this->security->getUser());
         $reviewRepository->add($review,true);
+        $userGiver = $this->security->getUser();
         
-
+        
         // Return a json with first place the datas and secondly a status code
         return $this->json(
-            $review,
+            [$review, $userGiver,$userTaker ],
             Response::HTTP_CREATED,
             [
                // "Location" => $this->generateUrl("app_api_user_getUserById", ["id" => $review->getUserTaker()->getId()])
@@ -88,14 +91,23 @@ class ReviewController extends AbstractController
     } 
 
      /**
-     * @Route("/api/avis/{id}", name="app_api_review_getOneById", methods={"GET"}, requirements={"id"="\d+"})
+     * @Route("/api/avis-par-utilisateur/{id}", name="app_api_review_getOneById", methods={"GET"}, requirements={"id"="\d+"})
      * @IsGranted("ROLE_USER")
+     * 
      */
-    public function getOne(Review $review): Response
+    public function getOne(ReviewRepository $reviewRepository, int $id, UserRepository $userRepository): Response
     {
 
+        $reviewByUserId = $reviewRepository->findReviewByUserTakerId($id);
+       
+        $userGiver = [];
+        $userTaker = [];
+        foreach($reviewByUserId as $user){
+            $userGiver[]=$userRepository->find($user["user_giver_id"]);
+        }
+        
         // Returns a Json with first argument data and 2nd argument the status code
-        return $this->json($review,Response::HTTP_OK,[],["groups" => "reviews"]);
+        return $this->json(compact("reviewByUserId","userGiver"),Response::HTTP_OK,[],["groups" => "reviews"]);
     }
 
 }

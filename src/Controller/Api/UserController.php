@@ -22,8 +22,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
-
-
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class UserController extends AbstractController
 {
@@ -57,7 +57,7 @@ class UserController extends AbstractController
      * @IsGranted("ROLE_USER")
      * 
      */
-    public function edit(User $user, Request $request, SerializerInterface $serializer, ValidatorInterface $validator, ManagerRegistry $doctrine, UserRepository $userRepository): Response
+    public function edit(User $user, Request $request, SerializerInterface $serializer, ValidatorInterface $validator, ManagerRegistry $doctrine): Response
     {
         if($user != $this->security->getUser()){
             throw $this->createAccessDeniedException('Access denied: Vous n\'êtes pas autorisé à modifier ce profil');
@@ -85,10 +85,8 @@ class UserController extends AbstractController
         }
 
         
-        
         // Update the user
         $entityManager = $doctrine->getManager();
-
         $user->setUpdatedAt(new \DateTime('now'));
         $entityManager->flush();
 
@@ -194,9 +192,9 @@ class UserController extends AbstractController
      * @IsGranted("ROLE_USER")
      * Present one user
      */
-    public function getUserById(User $user): JsonResponse
+    public function getUserById(User $user, ReviewRepository $reviewRepository): JsonResponse
     {
-    
+       
         // Return a Json with data and status code
          return $this->json($user,Response::HTTP_OK,[],["groups" => "users"]);   
     }
